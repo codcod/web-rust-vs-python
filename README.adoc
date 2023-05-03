@@ -1,0 +1,62 @@
+= Comparison of web development with Rust vs Python
+
+Not scientific at all.
+
+Rust web app made with:
+
+* https://actix.rs[Actix] (non-async)
+* https://github.com/launchbadge/sqlx[SQLx]
+
+Python web app made with:
+
+* https://docs.aiohttp.org/en/stable/[Aiohttp] (async)
+* https://www.sqlalchemy.org[SQLAlchemy]
+* https://alembic.sqlalchemy.org/en/latest/[Alembic]
+* https://magicstack.github.io/asyncpg/current/[asyncpg]
+
+Both web apps use the same database:
+
+* https://www.postgresql.org[PostgreSQL]
+
+
+== How to run the code
+
+Rust.
+
+[source, bash]
+----
+$ # git clone && cd web-rust
+$ cargo build --release
+$ ./target/release/web-rust
+$ open http://127.0.0.1:8080
+----
+
+Python.
+
+[source, bash]
+----
+$ # git clone && cd web-python
+$ make venv
+$ source .venv/bin/activate
+$ alembic upgrade ec5ddda825ce
+$ ./scripts/run
+$ open http://127.0.0.1:8080
+----
+
+Stress test it with:
+
+[source, bash]
+----
+$ wrk -t 8 -c 200 -d 5s http://127.0.0.1:8080/authors
+----
+
+
+== Database
+
+Before running the code create the database schema using SQL statements from
+`scripts/create.sql` and subsequently `scripts/seed.sql`.
+
+Set the proper database connection string in:
+
+* `web-rust/.env`
+* `web-python/config/config.toml`

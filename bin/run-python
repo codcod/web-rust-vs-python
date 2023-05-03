@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+PYTHONPATH=web-python gunicorn web-python.app:make_app -w 1 -k aiohttp.GunicornWebWorker --reload
+
+# vim: sw=4:et:ai
