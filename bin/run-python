@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
-PYTHONPATH=web-python gunicorn web-python.app:make_app -w 1 -k aiohttp.GunicornWebWorker --reload
+PYTHONPATH=web-python gunicorn web-python.app:make_app -w 8 -k aiohttp.GunicornWebWorker -b 0.0.0.0:8080 --chdir=web-python
 
 # vim: sw=4:et:ai
