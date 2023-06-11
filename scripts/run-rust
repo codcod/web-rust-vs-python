@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+cd web-rust && ./target/release/web-rust
+
+# vim: sw=4:et:ai

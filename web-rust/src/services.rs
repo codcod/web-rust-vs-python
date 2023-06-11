@@ -78,7 +78,10 @@ pub async fn create_author_book(
     .await
     {
         Ok(book) => HttpResponse::Ok().json(book),
-        Err(_) => HttpResponse::InternalServerError().json("Failed to create a book for an author"),
+        Err(error) => {
+            print!("Error: {}", error);
+            HttpResponse::InternalServerError().json("Failed to create a book for an author")
+        },
         //Err(error) => panic!("error: {}", error),
     }
 }

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+skip-string-normalization = 1
+
+[tool.pytest.ini_options]
+# https://docs.pytest.org/en/latest/reference/customize.html
+minversion = "6.0"
+addopts = "--doctest-modules -vv --cov=webapp tests"
+testpaths = [
+    "tests",
+]
+
+[tool.poetry]
+name = "webapp"
+version = "0.1.0"
+description = ""
+authors = ["codcod <nikos@linux.com>"]
+readme = "README.adoc"
+packages = [{include = "webapp"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiohttp = "^3.8.4"
+asyncpg = "^0.27.0"
+alembic = "^1.10.2"
+gunicorn = "^20.1.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.7"}
+flask = "^2.2.3"

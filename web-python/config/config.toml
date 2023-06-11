@@ -1,0 +1,4 @@
+[database]
+
+DB_URL = 'postgresql+asyncpg://postgres:postgres@127.0.0.1:15432/postgres'
+DB_ECHO = false

@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.coverage
+.vscode/
+
+*.db
+.instance/
+*.log
+
+# You can get more comprehensive list with:
+# curl -s -o .gitignore -O https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore

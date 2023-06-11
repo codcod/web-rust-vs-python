@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+PYTHONPATH=. gunicorn webapp.app:make_app -b 127.0.0.1:8080 -w 1 -k aiohttp.GunicornWebWorker

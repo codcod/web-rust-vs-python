@@ -1,4 +1,5 @@
 = Comparison of web development with Rust vs Python
+:icons: font
 
 Not scientific at all.
 
@@ -18,8 +19,55 @@ Both web apps use the same database:
 
 * https://www.postgresql.org[PostgreSQL]
 
+HTTP requests are made with:
 
-== How to run the code
+* https://httpie.io[http]
+* https://github.com/wg/wrk[wrk]
+* https://k6.io[k6]
+
+== Setting up database
+
+Before running the code create the database schema using SQL statements from
+`scripts/create.sql` and subsequently `scripts/seed.sql`.
+
+Set the proper database connection string in:
+
+* `web-rust/.env`
+* `web-python/config/config.toml`
+
+You can do it with `podman`.
+
+[source, bash]
+----
+$ ./scripts/container/create-container-db.sh
+$ podman logs --tail=10 postgres-web-rust-vs-python
+$ podman exec -it postgres-web-rust-vs-python bash
+core@5a4c1c84ced7:/$ psql -U postgres
+psql (15.3 (Debian 15.3-1.pgdg110+1))
+Type "help" for help.
+
+postgres=# \l
+
+   Name    |  Owner   | Encoding |  Collate   |   Ctype    | ICU Locale | Locale Provider |   Access privileges
+-----------+----------+----------+------------+------------+------------+-----------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            |
+ template0 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +
+           |          |          |            |            |            |                 | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +
+           |          |          |            |            |            |                 | postgres=CTc/postgres
+(3 rows)
+
+postgres=# select * from authors;
+ author_id | first_name | last_name
+-----------+------------+-----------
+         1 | David      | Baldacci
+         2 | Laura      | Dave
+         3 | Colleen    | Hoover
+         4 | Bonnie     | Garmus
+(4 rows)
+----
+
+== Running the code
 
 Rust.
 
@@ -38,62 +86,188 @@ Python.
 $ # git clone && cd web-python
 $ make venv
 $ source .venv/bin/activate
-$ alembic upgrade ec5ddda825ce
 $ ./scripts/run
 $ open http://127.0.0.1:8080
+----
+
+Available HTTP API.
+
+[cols="3,3,3,3"]
+|===
+|API |SQL |Python |Rust
+
+|`GET /author/1`
+|`select authors where author_id=1`
+|icon:plus-circle[role=green]
+|icon:minus-circle[role=red]
+
+|`GET /authors/1/books`
+|`select * books where author_id=1`
+|icon:minus-circle[role=red]
+|icon:plus-circle[role=green]
+
+|`GET /authors`
+|`select authors`
+|icon:plus-circle[role=green]
+|icon:plus-circle[role=green]
+
+|`POST /authors/1/books`
+|`insert into books values`
+|icon:plus-circle[role=green]
+|icon:plus-circle[role=green]
+
+|===
+
+
+Test it from the command line by issueing a single request with:
+
+[source, bash]
+----
+# read (GET)
+$ http 127.0.0.1:8080/authors
+[..]
+
+$ http 127.0.0.1:8080/author/1
+HTTP/1.1 200 OK
+Content-Length: 75
+Content-Type: application/json; charset=utf-8
+Date: Sun, 11 Jun 2023 17:59:03 GMT
+Server: Python/3.11 aiohttp/3.8.4
+
+{
+    "row": [
+        {
+            "author_id": 1,
+            "first_name": "David",
+            "last_name": "Baldacci"
+        }
+    ]
+}
+
+# write (POST)
+$ http POST 127.0.0.1:8080/authors/1/books title=Title summary=Summary publication_date=2021-01-01
+HTTP/1.1 200 OK
+Content-Length: 33
+Content-Type: application/json; charset=utf-8
+Date: Sun, 11 Jun 2023 18:00:19 GMT
+Server: Python/3.11 aiohttp/3.8.4
+
+{
+    "records": [
+        {
+            "book_id": 6
+        }
+    ]
+}
 ----
 
 Stress test it with:
 
 [source, bash]
 ----
+# read (GET)
 $ wrk -t 8 -c 200 -d 5s http://127.0.0.1:8080/authors
+$ k6 run ./scripts/stress/get-books.js
+
+# write (POST)
+$ wrk -t 8 -c 200 -d 5s -s ../scripts/stress/post-book.lua \
+    'http://127.0.0.1:8080/authors/1/books'
+$ k6 run ./scripts/stress/post-book.js
 ----
 
+In case it's necessary increase the open files limit:
 
-== Database
+[source, bash]
+----
+$ ulimit -n        # see the current setting
+256
+$ ulimit -n 50000  # set a new one for the session
 
-Before running the code create the database schema using SQL statements from
-`scripts/create.sql` and subsequently `scripts/seed.sql`.
-
-Set the proper database connection string in:
-
-* `web-rust/.env`
-* `web-python/config/config.toml`
+# list processes with the most opened files (takes lots of time on MacOS)
+$ lsof |awk '{ print $1 " " $2; }' |sort -rn |uniq -c |sort -rn |head -15
+----
 
 == Preliminary results
 
-Rust.
+Rust (read).
 
 [source, text]
 ----
-~ ❯ wrk -t 8 -c 200 -d 5s http://localhost:8080/authors
+$ wrk -t 8 -c 200 -d 5s http://localhost:8080/authors
 Running 5s test @ http://localhost:8080/authors
   8 threads and 200 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency    13.51ms   33.24ms 327.05ms   89.67%
-    Req/Sec    23.77k     7.37k   51.26k    70.43%
-  947832 requests in 5.10s, 122.18MB read
-  Socket errors: connect 0, read 70, write 0, timeout 0
-  Non-2xx or 3xx responses: 938147
-Requests/sec: 185818.73
-Transfer/sec:     23.95MB
+    Latency     9.10ms   12.33ms 383.26ms   98.68%
+    Req/Sec     3.08k   487.89     7.91k    97.27%
+  123589 requests in 5.10s, 40.66MB read
+  Socket errors: connect 0, read 63, write 0, timeout 0
+Requests/sec:  24223.90
+Transfer/sec:      7.97MB
 ----
 
-Python.
-
+Python (read).
 
 [source, text]
 ----
-~ ❯ wrk -t 8 -c 200 -d 5s http://localhost:8080/authors
+$ wrk -t 8 -c 200 -d 5s http://localhost:8080/authors
 Running 5s test @ http://localhost:8080/authors
   8 threads and 200 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   182.11ms  194.11ms   1.29s    90.83%
-    Req/Sec   189.98     67.80   360.00     71.94%
-  6400 requests in 5.03s, 2.61MB read
-  Socket errors: connect 0, read 174, write 0, timeout 0
-Requests/sec:   1272.09
-Transfer/sec:    531.69KB
+    Latency    29.81ms   36.50ms 394.42ms   88.15%
+    Req/Sec     1.22k   411.67     6.74k    84.29%
+  48759 requests in 5.10s, 19.90MB read
+  Socket errors: connect 0, read 62, write 0, timeout 0
+Requests/sec:   9557.79
+Transfer/sec:      3.90MB
 ----
 
+Rust (write).
+
+[source, text]
+----
+$ wrk -t 8 -c 200 -d 5s -s ../scripts/post.lua 'http://127.0.0.1:8080/authors/1/books'
+Running 5s test @ http://127.0.0.1:8080/authors/1/books
+  8 threads and 200 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    16.52ms   22.01ms 267.86ms   92.30%
+    Req/Sec     2.12k   309.01     4.16k    94.55%
+  85065 requests in 5.10s, 16.82MB read
+  Socket errors: connect 0, read 60, write 0, timeout 0
+Requests/sec:  16672.21
+Transfer/sec:      3.30MB
+----
+
+Python (write).
+
+[source, text]
+----
+$ wrk -t 8 -c 200 -d 5s -s ../scripts/post.lua 'http://127.0.0.1:8080/authors/1/books'
+Running 5s test @ http://127.0.0.1:8080/authors/1/books
+  8 threads and 200 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    57.63ms   78.54ms 694.30ms   88.00%
+    Req/Sec   761.55    260.57     1.68k    71.25%
+  30345 requests in 5.01s, 5.04MB read
+  Socket errors: connect 0, read 60, write 0, timeout 0
+Requests/sec:   6058.02
+Transfer/sec:      1.01MB
+----
+
+== Installing Podman in MacOS
+
+[source, bash]
+----
+$ brew install podman
+
+# remove am existing machine to ensure the newest setup
+$ # podman machine stop && podman machine rm
+
+# create a new machine
+$ podman machine init
+$ # podman machine set --rootful
+$ podman machine start
+
+# install system helper service
+$ sudo /opt/homebrew/Cellar/podman/4.5.1/bin/podman-mac-helper install
+$ podman machine stop; podman machine start
+----

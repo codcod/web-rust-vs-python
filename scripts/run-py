@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+if [[ ! -z ${VIRTUAL_ENV+x} ]]; then
+    cd web-python && ./scripts/run
+else
+    echo "Activate virtual env before running this command"
+    echo "$ cd web-python && source .venv/bin/activate && cd .."
+fi
+
+# vim: sw=4:et:ai
