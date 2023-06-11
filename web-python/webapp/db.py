@@ -29,6 +29,8 @@ def init_db(config: dict[str, tp.Any]):
     engine = create_async_engine(
         config_db['DB_URL'],
         echo=config_db['DB_ECHO'],
+        pool_size=10,
+        max_overflow=0,
     )
     return engine
 

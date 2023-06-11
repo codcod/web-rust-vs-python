@@ -170,7 +170,7 @@ $ wrk -t 8 -c 200 -d 5s http://127.0.0.1:8080/authors
 $ k6 run ./scripts/stress/get-books.js
 
 # write (POST)
-$ wrk -t 8 -c 200 -d 5s -s ../scripts/stress/post-book.lua \
+$ wrk -t 8 -c 200 -d 5s -s ./scripts/stress/post-book.lua \
     'http://127.0.0.1:8080/authors/1/books'
 $ k6 run ./scripts/stress/post-book.js
 ----
