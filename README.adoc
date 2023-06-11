@@ -28,7 +28,7 @@ HTTP requests are made with:
 == Setting up database
 
 Before running the code create the database schema using SQL statements from
-`scripts/create.sql` and subsequently `scripts/seed.sql`.
+`scripts/sql/create.sql` and subsequently `scripts/sql/seed.sql`.
 
 Set the proper database connection string in:
 
@@ -37,7 +37,7 @@ Set the proper database connection string in:
 
 You can do it with `podman`.
 
-[source, bash]
+[source, text]
 ----
 $ ./scripts/container/create-container-db.sh
 $ podman logs --tail=10 postgres-web-rust-vs-python
