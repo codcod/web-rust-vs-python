@@ -1,0 +1,8 @@
+pytest
+pytest-cov
+mypy
+pylint
+pydocstyle
+flake8
+black
+blue
